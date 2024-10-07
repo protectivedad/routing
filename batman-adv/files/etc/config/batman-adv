@@ -9,7 +9,6 @@ config 'mesh' 'bat0'
 	option 'gw_sel_class'
 	option 'log_level'
 	option 'orig_interval'
-	option 'vis_mode'
 	option 'bridge_loop_avoidance'
 	option 'distributed_arp_table'
 	option 'multicast_mode'
@@ -19,4 +18,3 @@ config 'mesh' 'bat0'
 
 # yet another batX instance
 # config 'mesh' 'bat5'
-#	option 'interfaces' 'second_mesh'
