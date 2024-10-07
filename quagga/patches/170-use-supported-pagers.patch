@@ -9,7 +9,7 @@
  }
  
  /* Command execution over the vty interface. */
-@@ -1884,7 +1884,7 @@ DEFUN (vtysh_terminal_length,
+@@ -1866,7 +1866,7 @@ DEFUN (vtysh_terminal_length,
  {
    int lines;
    char *endptr = NULL;
@@ -18,7 +18,7 @@
  
    lines = strtol (argv[0], &endptr, 10);
    if (lines < 0 || lines > 512 || *endptr != '\0')
-@@ -1901,7 +1901,7 @@ DEFUN (vtysh_terminal_length,
+@@ -1883,7 +1883,7 @@ DEFUN (vtysh_terminal_length,
  
    if (lines != 0)
      {

@@ -1,80 +1,60 @@
-#
-# Copyright (C) 2006-2011 OpenWrt.org
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mrd6
-PKG_SOURCE_VERSION:=c805eb33255dbc0b6647d463c6c67d1c9d3105a0
-PKG_VERSION:=2013-11-30-$(PKG_SOURCE_VERSION)
+PKG_VERSION:=0.9.6
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=git://github.com/hugosantos/mrd6.git
-PKG_MAINTAINER:=Steven Barth <cyrus@openwrt.org>
-PKG_LICENSE:=GPL-2.0+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=http://downloads.openwrt.org/sources/
+#PKG_MD5SUM:=361322198dafcc5ffab5e8e23197012b
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
+#PKG_DEFAULT_CUSTOM_SOURCE_DIR:=$(TOPDIR)/../../../wlnsw/wireline_sw_linux24/open_mrd6
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-
-PKG_BUILD_PARALLEL:=1
-PKG_INSTALL:=1
-
+CONFIG_IPV6=1
+EXTERNAL_MODULES ?= bgp.so
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/package-version-override.mk
 
-define Package/mrd6
+define Package/$(PKG_NAME)
   SECTION:=net
-  CATEGORY:=Network
-  TITLE:=IPv6 multicast routing daemon
-  URL:=http://fivebits.net/proj/mrd6
-  DEPENDS:=@IPV6 +libstdcpp
+  CATEGORY:=Base system
+  TITLE:=MRD6
+  URL:=http://en.sourceforge.jp/
+  DEPENDS:=+libstdcpp
+  MENU:=1
 endef
 
-define Package/mrd6/description
- Multicast is becoming a major component in next generation networks, used 
- in several scenarios, from video broadcasting to multimedia conferencing. 
- In order to be implemented, new technology needs supporting hardware and 
- software across a set of devices and systems. MRD6 is an implementation of 
- a modular IPv6 Multicast Routing Framework for the Linux operating system 
- and provides MLDv2 (as well as MLDv1), PIM-SM and MBGP support.
+define Package/$(PKG_NAME)/description
+  Package for MRD6 Support 
 endef
 
-MRD6_MAKEFLAGS:= \
-	$(TARGET_CONFIGURE_OPTS) \
-	OPTIMIZE=yes \
-	SPACE_OPTIMIZE=yes \
-	FULL_STATIC=no \
-	CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS) -DNO_INET6_OPTION -fno-builtin -fno-rtti" \
-	LDFLAGS="$(TARGET_LDFLAGS) -ldl -lm" \
-	MODULE_CXX="\$$$$(CC) -shared \$$$$(CXXFLAGS) \$$$$(LDFLAGS)" \
-	DESTDIR="$(PKG_INSTALL_DIR)" \
-	PREFIX="/usr"
+ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
+  TOOLCHAIN_PATH:=$(TOOLCHAIN_DIR)
+else
+  TOOLCHAIN_PATH:=$(TOOLCHAIN_ROOT_DIR)
+endif
+
+define Build/Prepare
+	$(call Build/Prepare/Default)
+endef
+
 
 define Build/Compile
-	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/src $(MRD6_MAKEFLAGS) all
+	rm -f $(PKG_BUILD_DIR)/libstdc++.a $(PKG_BUILD_DIR)/src/libstdc++.a
+	ln -s $(TOOLCHAIN_PATH)/usr/lib/libstdc++.a $(PKG_BUILD_DIR)/src/
+	ln -s $(TOOLCHAIN_PATH)/usr/lib/libstdc++.a $(PKG_BUILD_DIR)/
+	$(MAKE) -C $(PKG_BUILD_DIR) $(TARGET_CONFIGURE_OPTS) STATIC_STDCXX=yes PLATFORM=OS_LINUX
 endef
 
-define Build/Install
-	$(MAKE) -C $(PKG_BUILD_DIR)/src $(MRD6_MAKEFLAGS) install
+define Package/$(PKG_NAME)/install
+	$(INSTALL_DIR) $(1)/sbin
+	$(INSTALL_BIN)  $(PKG_BUILD_DIR)/src/mrd $(1)/sbin/
 endef
 
-define Package/mrd6/conffiles
-/etc/mrd6.conf
+define Build/Clean
+	if [ -d $(PKG_BUILD_DIR) ]; then $(MAKE) -C $(PKG_BUILD_DIR) clean; \
+	$(RM) $(PKG_BUILD_DIR)/ipk; $(RM) $(PKG_BUILD_DIR)/src/libstdc++.a \
+	$(PKG_BUILD_DIR)/libstdc++.a; fi
 endef
 
-define Package/mrd6/install
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_CONF) ./files/mrd6.conf $(1)/etc
-	$(INSTALL_BIN) ./files/mrd6.init $(1)/etc/init.d/mrd6
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/mrd $(1)/usr/sbin/mrd6
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/mrd6sh $(1)/usr/bin/mrd6sh
-	$(INSTALL_DIR) $(1)/usr/lib/mrd6
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/mrd6/bgp.so $(1)/usr/lib/mrd6/bgp.so
-endef
-
-$(eval $(call BuildPackage,mrd6))
+$(eval $(call BuildPackage,$(PKG_NAME)))
