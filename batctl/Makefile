@@ -9,15 +9,13 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=batctl
 
-PKG_VERSION:=2016.1
-PKG_RELEASE:=1
-PKG_MD5SUM:=b98a6e3b45927315cd6d4efba4c1a1ff
+PKG_VERSION:=2018.1
+PKG_RELEASE:=4
+PKG_HASH:=27877d0da6916f88a6cecbbb3f3d23cc4558ef7c7294324bf4fd050ed606b553
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://downloads.open-mesh.org/batman/releases/batman-adv-$(PKG_VERSION)
 PKG_LICENSE:=GPL-2.0
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)/$(PKG_NAME)-$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -25,9 +23,9 @@ define Package/batctl
   URL:=https://www.open-mesh.org/
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+kmod-batman-adv +libnl-tiny +libc
+  DEPENDS:=+kmod-batman-adv +libnl-tiny +libc +librt
   TITLE:=B.A.T.M.A.N. Advanced user space configuration tool batctl
-  MAINTAINER:=Marek Lindner <mareklindner@neomailbox.ch>
+  MAINTAINER:=Simon Wunderlich <sw@simonwunderlich.de>
 endef
 
 define Package/batctl/description
@@ -55,13 +53,15 @@ MAKE_BATCTL_ENV += \
         CPPFLAGS="$(TARGET_CPPFLAGS)" \
         CFLAGS="$(TARGET_CFLAGS)" \
         LDFLAGS="$(TARGET_LDFLAGS)" \
-        LIBNL_NAME="libnl-tiny"
+        LIBNL_NAME="libnl-tiny" \
+        LIBNL_GENL_NAME="libnl-tiny"
 
 MAKE_BATCTL_ARGS += \
         REVISION="$(PKG_BATCTL_SHORTREV)" \
         CC="$(TARGET_CC)" \
         DESTDIR="$(PKG_INSTALL_DIR)" \
-        batctl install
+        batctl install \
+        REVISION="openwrt-$(PKG_VERSION)-$(PKG_RELEASE)"
 
 
 define Build/Compile
