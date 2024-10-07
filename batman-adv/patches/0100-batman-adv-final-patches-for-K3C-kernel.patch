@@ -1,0 +1,152 @@
+--- a/compat-include/linux/kernel.h
++++ b/compat-include/linux/kernel.h
+@@ -25,21 +25,4 @@
+ #include <linux/version.h>
+ #include_next <linux/kernel.h>
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0)
+-
+-#define U8_MAX		((u8)~0U)
+-#define S8_MAX		((s8)(U8_MAX >> 1))
+-#define S8_MIN		((s8)(-S8_MAX - 1))
+-#define U16_MAX		((u16)~0U)
+-#define S16_MAX		((s16)(U16_MAX >> 1))
+-#define S16_MIN		((s16)(-S16_MAX - 1))
+-#define U32_MAX		((u32)~0U)
+-#define S32_MAX		((s32)(U32_MAX >> 1))
+-#define S32_MIN		((s32)(-S32_MAX - 1))
+-#define U64_MAX		((u64)~0ULL)
+-#define S64_MAX		((s64)(U64_MAX >> 1))
+-#define S64_MIN		((s64)(-S64_MAX - 1))
+-
+-#endif /* < KERNEL_VERSION(3, 14, 0) */
+-
+ #endif	/* _NET_BATMAN_ADV_COMPAT_LINUX_KERNEL_H_ */
+--- a/compat-sources/net/core/skbuff.c
++++ b/compat-sources/net/core/skbuff.c
+@@ -40,57 +40,6 @@
+ #include <net/checksum.h>
+ #include <net/ip6_checksum.h>
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
+-
+-/* Compare with:
+- * "bridge: multicast: call skb_checksum_{simple_, }validate"
+- */
+-__sum16 skb_checksum_simple_validate(struct sk_buff *skb)
+-{
+-	switch (skb->ip_summed) {
+-	case CHECKSUM_COMPLETE:
+-		if (!csum_fold(skb->csum))
+-			break;
+-		/* fall through */
+-	case CHECKSUM_NONE:
+-		skb->csum = 0;
+-		return skb_checksum_complete(skb);
+-	}
+-
+-	return 0;
+-}
+-
+-/* Watch out: Not as generic as upstream
+- * - redefines this method to only fit with ICMPV6
+- *
+- * Compare with:
+- * "bridge: multicast: call skb_checksum_{simple_, }validate"
+- */
+-__sum16
+-skb_checksum_validate(struct sk_buff *skb, int proto,
+-		      __wsum (*compute_pseudo)(struct sk_buff *skb, int proto))
+-{
+-	const struct ipv6hdr *ip6h = ipv6_hdr(skb);
+-
+-	switch (skb->ip_summed) {
+-	case CHECKSUM_COMPLETE:
+-		if (!csum_ipv6_magic(&ip6h->saddr, &ip6h->daddr, skb->len,
+-				     IPPROTO_ICMPV6, skb->csum))
+-			break;
+-		/*FALLTHROUGH*/
+-	case CHECKSUM_NONE:
+-		skb->csum = ~csum_unfold(csum_ipv6_magic(&ip6h->saddr,
+-							 &ip6h->daddr,
+-							 skb->len,
+-							 IPPROTO_ICMPV6, 0));
+-		return __skb_checksum_complete(skb);
+-	}
+-
+-	return 0;
+-}
+-
+-#endif /* < KERNEL_VERSION(3, 16, 0) */
+-
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
+ 
+ /**
+--- a/compat-include/linux/skbuff.h
++++ b/compat-include/linux/skbuff.h
+@@ -61,12 +61,6 @@
+ 
+ #define pskb_copy_for_clone pskb_copy
+ 
+-__sum16 skb_checksum_simple_validate(struct sk_buff *skb);
+-
+-__sum16
+-skb_checksum_validate(struct sk_buff *skb, int proto,
+-		      __wsum (*compute_pseudo)(struct sk_buff *skb, int proto));
+-
+ #endif /* < KERNEL_VERSION(3, 16, 0) */
+ 
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
+--- a/compat-include/net/ip6_checksum.h
++++ /dev/null
+@@ -1,39 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
+-/* Copyright (C) 2007-2018  B.A.T.M.A.N. contributors:
+- *
+- * Marek Lindner, Simon Wunderlich
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of version 2 of the GNU General Public
+- * License as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+- * General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, see <http://www.gnu.org/licenses/>.
+- *
+- * This file contains macros for maintaining compatibility with older versions
+- * of the Linux kernel.
+- */
+-
+-#ifndef _NET_BATMAN_ADV_COMPAT_NET_IP6_CHECKSUM_H_
+-#define _NET_BATMAN_ADV_COMPAT_NET_IP6_CHECKSUM_H_
+-
+-#include <linux/version.h>
+-#include_next <net/ip6_checksum.h>
+-
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
+-
+-static inline __wsum ip6_compute_pseudo(struct sk_buff *skb, int proto)
+-{
+-	return ~csum_unfold(csum_ipv6_magic(&ipv6_hdr(skb)->saddr,
+-					    &ipv6_hdr(skb)->daddr,
+-					    skb->len, proto, 0));
+-}
+-
+-#endif /* < KERNEL_VERSION(3, 16, 0) */
+-
+-#endif	/* _NET_BATMAN_ADV_COMPAT_NET_IP6_CHECKSUM_H_ */
+--- a/compat.h
++++ b/compat.h
+@@ -28,8 +28,6 @@
+ #include <linux/kconfig.h>
+ #include <generated/autoconf.h>
+ 
+-#include "compat-autoconf.h"
+-
+ /* test for dependency CONFIG_BATMAN_ADV_DEBUG -> CONFIG_BATMAN_ADV_DEBUGFS */
+ #if defined(CONFIG_BATMAN_ADV_DEBUG) && !defined(CONFIG_BATMAN_ADV_DEBUGFS)
+ #error CONFIG_BATMAN_ADV_DEBUG=y requires CONFIG_BATMAN_ADV_DEBUGFS=y

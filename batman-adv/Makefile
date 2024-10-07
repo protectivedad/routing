@@ -18,8 +18,6 @@ PKG_SOURCE_URL:=https://downloads.open-mesh.org/batman/releases/batman-adv-$(PKG
 PKG_LICENSE:=GPL-2.0
 PKG_EXTMOD_SUBDIRS=net/batman-adv
 
-STAMP_CONFIGURED_DEPENDS := $(STAGING_DIR)/usr/include/mac80211-backport/backport/autoconf.h
-
 include $(INCLUDE_DIR)/kernel.mk
 include $(INCLUDE_DIR)/package.mk
 
@@ -27,7 +25,7 @@ define KernelPackage/batman-adv
   URL:=https://www.open-mesh.org/
   MAINTAINER:=Simon Wunderlich <sw@simonwunderlich.de>
   SUBMENU:=Network Support
-  DEPENDS:=+KMOD_BATMAN_ADV_BLA:kmod-lib-crc16 +kmod-crypto-crc32c +kmod-lib-crc32c +kmod-cfg80211
+  DEPENDS:=+KMOD_BATMAN_ADV_BLA:kmod-lib-crc16 +kmod-crypto-crc32c +kmod-lib-crc32c
   TITLE:=B.A.T.M.A.N. Adv
   FILES:=$(PKG_BUILD_DIR)/net/batman-adv/batman-adv.$(LINUX_KMOD_SUFFIX)
   AUTOLOAD:=$(call AutoProbe,batman-adv)
@@ -63,13 +61,9 @@ PKG_EXTRA_CFLAGS:= \
 
 NOSTDINC_FLAGS = \
 	-I$(PKG_BUILD_DIR)/net/batman-adv \
-	-I$(STAGING_DIR)/usr/include/mac80211-backport \
-	-I$(STAGING_DIR)/usr/include/mac80211-backport/uapi \
-	-I$(STAGING_DIR)/usr/include/mac80211 \
-	-I$(STAGING_DIR)/usr/include/mac80211/uapi \
+	-I$(PKG_BUILD_DIR)/compat-include \
 	-I$(PKG_BUILD_DIR)/include/ \
-	-include backport/backport.h \
-	-include $(PKG_BUILD_DIR)/compat-hacks.h \
+	-include $(PKG_BUILD_DIR)/compat.h \
 	-DBATADV_SOURCE_VERSION=\\\"openwrt-$(PKG_VERSION)-$(PKG_RELEASE)\\\"
 
 COMPAT_SOURCES = \
@@ -87,11 +81,6 @@ define Build/Compile
 		EXTRA_CFLAGS="$(PKG_EXTRA_CFLAGS)" \
 		NOSTDINC_FLAGS="$(NOSTDINC_FLAGS)" \
 		modules
-endef
-
-define Build/Prepare
-	$(call Build/Prepare/Default)
-	$(CP) ./files/compat-hacks.h $(PKG_BUILD_DIR)/
 endef
 
 define Build/Clean
